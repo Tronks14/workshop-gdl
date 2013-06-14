@@ -14,24 +14,25 @@
 #define PORT 3550 /* El puerto que será abierto */
 #define BACKLOG 2 /* El número de conexiones permitidas */
 
-void doprocessing (int sock)
+void doprocessing (int sock)//Aqui se recibe y envian los datos del y al socket
 {
     int n;
     char buffer[256];
 
-    memset(&(buffer), '0', 256);
+    memset(&(buffer),'0', 256);
     int recvMsgSize;
     
-    /* Receive message from client */
+    /* Receive message from client - Si no hay datos para leer ene l socket se manda error*/
     if ((recvMsgSize = recv(sock, buffer, 256, 0)) < 0)
         perror("ERROR reading to socket");
 
     /* Send received string and receive again until end of transmission */
     while (recvMsgSize > 0)      /* zero indicates end of transmission */
     {
-        /* Echo message back to client */
-        if (send(sock, buffer, recvMsgSize, 0) != recvMsgSize)
+        /* Echo message back to client - Si el mensaje no es enviado correctamente al socket se regresa error*/
+        if (send(sock, buffer, recvMsgSize, 0) != recvMsgSize){
             perror("ERROR writing to socket");
+			}else printf("%s", recvMsgSize);
 
         /* See if there is more data to receive */
         if ((recvMsgSize = recv(sock, buffer, 256, 0)) < 0)
@@ -41,7 +42,7 @@ void doprocessing (int sock)
     closesocket(sock);    /* Close client socket */
 }
 
-BOOL initW32() 
+BOOL initW32() //Necesario para conectar el socket en windows librerias y versiones
 {
 		WSADATA wsaData;
 		WORD version;
@@ -122,10 +123,10 @@ int main()
          exit(-1);
       }
 
-      printf("Se obtuvo una conexión desde %s\n", inet_ntoa(client.sin_addr) );
+      printf("Se obtuvo una conexión desde Luis %s\n", inet_ntoa(client.sin_addr) );
       /* que mostrará la IP del cliente */
 
-      send(fd2,"Bienvenido a mi servidor.\n",22,0);
+      send(fd2,"Bienvenido a mi servidor LARM.\n",256,0);
       /* que enviará el mensaje de bienvenida al cliente */
       
       doprocessing(fd2);
@@ -133,3 +134,16 @@ int main()
    } /* end while */
 }
 
+int leerfc(char *rfc)
+{
+FILE *fp; //the file handling
+char c;
+fp = fopen("C:/Users/usuario/Documents/GitHub/GDL/workshop-gdl/workshop/credit-bureau/src/c/Loans.txt","r");
+while ((c = getc(fp)) != EOF) 
+{
+
+printf("%c",c); 
+} 
+fclose(fp);
+return 0; 
+}
