@@ -1,149 +1,141 @@
-/**
- * Este aplicacion representa a una entidad crediticia la cual
- * concentra todos los creditos otorgados a los clientes de
- * diferentes entidades.
- */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <winsock2.h>
 #include <unistd.h>
-
 #define PORT 3550 /* El puerto que será abierto */
-#define BACKLOG 2 /* El número de conexiones permitidas */
-
-void doprocessing (int sock)//Aqui se recibe y envian los datos del y al socket
+#define BACKLOG 5 /* El número de conexiones permitidas */
+#define BUFFER_SIZE 127 // cambiar el buffer a 128
+void doprocessing(int sock) {
+int n;
+char buffer[BUFFER_SIZE];
+memset(&(buffer), '0', BUFFER_SIZE);
+int recvMsgSize;
+int acm = 0;
+/* Send received string and receive again until end of transmission */
+do /* zero indicates end of transmission */
 {
-    int n;
-    char buffer[256];
-
-    memset(&(buffer),'0', 256);
-    int recvMsgSize;
-    
-    /* Receive message from client - Si no hay datos para leer ene l socket se manda error*/
-    if ((recvMsgSize = recv(sock, buffer, 256, 0)) < 0)
-        perror("ERROR reading to socket");
-
-    /* Send received string and receive again until end of transmission */
-    while (recvMsgSize > 0)      /* zero indicates end of transmission */
-    {
-        /* Echo message back to client - Si el mensaje no es enviado correctamente al socket se regresa error*/
-        if (send(sock, buffer, recvMsgSize, 0) != recvMsgSize){
-            perror("ERROR writing to socket");
-			}else printf("%s", recvMsgSize);
-
-        /* See if there is more data to receive */
-        if ((recvMsgSize = recv(sock, buffer, 256, 0)) < 0)
-            perror("ERROR reading to socket");
-    }
-
-    closesocket(sock);    /* Close client socket */
+printf("buffer3: %d*\n", recvMsgSize);
+/* See if there is more data to receive */
+if ((recvMsgSize = recv(sock, buffer, BUFFER_SIZE, 0)) < 0) {
+perror("ERROR reading to socket 3");
 }
-
-BOOL initW32() //Necesario para conectar el socket en windows librerias y versiones
+acm += recvMsgSize;
+printf("buffer3: %d*\n", acm);
+if (acm == BUFFER_SIZE)
 {
-		WSADATA wsaData;
-		WORD version;
-		int error;
-		
-		version = MAKEWORD( 2, 0 );
-		
-		error = WSAStartup( version, &wsaData );
-		
-		/* check for error */
-		if ( error != 0 )
-		{
-		    /* error occured */
-		    return FALSE;
-		}
-		
-		/* check for correct version */
-		if ( LOBYTE( wsaData.wVersion ) != 2 ||
-		     HIBYTE( wsaData.wVersion ) != 0 )
-		{
-		    /* incorrect WinSock version */
-		    WSACleanup();
-		    return FALSE;
-		}	
-}
-
-int main()
-{
-
-	 initW32(); /* Necesaria para compilar en Windows */ 
-	 	
-   int fd, fd2; /* los descriptores de archivos */
-
-   /* para la información de la dirección del servidor */
-   struct sockaddr_in server;
-
-   /* para la información de la dirección del cliente */
-   struct sockaddr_in client;
-
-   unsigned int sin_size;
-
-   pid_t pid;
-
-   /* A continuación la llamada a socket() */
-   if ((fd=socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
-      printf("error en socket()\n");
-      exit(-1);
-   }
-
-   server.sin_family = AF_INET;
-
-   server.sin_port = htons(PORT);
-
-   server.sin_addr.s_addr = INADDR_ANY;
-   /* INADDR_ANY coloca nuestra dirección IP automáticamente */
-
-   //bzero(&(server.sin_zero),8);
-   memset(&(server.sin_zero), '0', 8);
-   /* escribimos ceros en el reto de la estructura */
-
-
-   /* A continuación la llamada a bind() */
-   if(bind(fd,(struct sockaddr*)&server, sizeof(struct sockaddr))==-1) {
-      printf("error en bind() \n");
-      exit(-1);
-   }
-
-   if(listen(fd,BACKLOG) == -1) {  /* llamada a listen() */
-      printf("error en listen()\n");
-      exit(-1);
-   }
-
-   while(1) {
-      sin_size=sizeof(struct sockaddr_in);
-      /* A continuación la llamada a accept() */
-      if ((fd2 = accept(fd,(struct sockaddr *)&client, &sin_size))==-1) {
-         printf("error en accept()\n");
-         exit(-1);
-      }
-
-      printf("Se obtuvo una conexión desde Luis %s\n", inet_ntoa(client.sin_addr) );
-      /* que mostrará la IP del cliente */
-
-      send(fd2,"Bienvenido a mi servidor LARM.\n",256,0);
-      /* que enviará el mensaje de bienvenida al cliente */
-      
-      doprocessing(fd2);
-
-   } /* end while */
-}
-
-int leerfc(char *rfc)
-{
-FILE *fp; //the file handling
-char c;
-fp = fopen("C:/Users/usuario/Documents/GitHub/GDL/workshop-gdl/workshop/credit-bureau/src/c/Loans.txt","r");
-while ((c = getc(fp)) != EOF) 
-{
-
-printf("%c",c); 
+/* Echo message back to client */
+if (send(sock, buffer, recvMsgSize, 0) != recvMsgSize)
+perror("ERROR writing to socket 2");
+printf("buffer3: %d*\n", recvMsgSize);
+//leerfile(buffer, sock);
+process(buffer, sock);
+break; 
 } 
-fclose(fp);
-return 0; 
+} while (recvMsgSize > 0);
+closesocket(sock); /* Close client socket */
 }
+process(const char* buffer, int sock){
+if (buffer[0] == 'w'){
+FILE * pFile;
+/*Format of buffer :
+"w115|34567ZXCVB|PATRIA|INDIA|35000|30/6/2013|VERY BAD|Y" */
+int indexOfBuffer = 1;
+if((pFile = fopen("rfc.txt", "a")) != NULL){
+for(indexOfBuffer = 1; buffer[indexOfBuffer] != '\n' ; indexOfBuffer++){
+fputc(buffer[indexOfBuffer],pFile);
+}
+printf("Done writing \n");
+fclose(pFile);
+}else{
+printf("Could not open file");
+}
+}else if(buffer[0] == 'r'){
+leerfile(buffer, sock);
+//memset(&(buffer), '0', 256);
+}
+}
+BOOL initW32() {
+WSADATA wsaData;
+WORD version;
+int error;
+version = MAKEWORD( 2, 0 );
+error = WSAStartup(version, &wsaData);
+/* check for error */
+if (error != 0) {
+/* error occured */
+return FALSE;
+}
+/* check for correct version */
+if (LOBYTE( wsaData.wVersion ) != 2 || HIBYTE( wsaData.wVersion ) != 0) {
+/* incorrect WinSock version */
+WSACleanup();
+return FALSE;
+}
+}
+int leerfile(const char* buffer, int sock) {
+FILE * pFile;
+char mystring[100];
+boolean found = FALSE;
+char rfc[11] = "XX ";
+strncpy(rfc, buffer+1, 10);
+printf("RFC: %s\n", rfc);
+pFile = fopen("rfc.txt", "r");
+if (pFile == NULL )
+perror("Error opening file");
+else {
+while (fgets(mystring, 100, pFile) != NULL) {
+if (strncmp(mystring + 4, rfc, 10) == 0) {
+puts(mystring);
+send(sock, mystring, strlen(mystring), 0);
+found = TRUE;
+puts("encontrado\n");
+}
+}
+if (found == FALSE){
+puts("no se encontro\n");
+send(sock, "No se encontro\n", 15, 0);
+}
+}
+fclose(pFile);
+return 0;
+}
+int main() {
+initW32(); /* Necesaria para compilar en Windows */
+int fd, fd2; /* los descriptores de archivos */
+struct sockaddr_in server; /* para la información de la dirección del servidor */
+struct sockaddr_in client;/* para la información de la dirección del cliente */
+unsigned int sin_size;
+pid_t pid;
+/* A continuación la llamada a socket() */
+if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+printf("error en socket()\n");
+exit(-1);
+}
+server.sin_family = AF_INET;
+server.sin_port = htons(PORT);
+server.sin_addr.s_addr = INADDR_ANY;/* INADDR_ANY coloca nuestra dirección IP automáticamente */
+//bzero(&(server.sin_zero),8);
+memset(&(server.sin_zero), '0', 8); /* escribimos ceros en el reto de la estructura */
+/* A continuación la llamada a bind() */
+if (bind(fd, (struct sockaddr*) &server, sizeof(struct sockaddr)) == -1) {
+printf("error en bind() \n");
+exit(-1);
+}
+if (listen(fd, BACKLOG) == -1) { /* llamada a listen() */
+printf("error en listen()\n");
+exit(-1);
+}
+while (1){
+sin_size = sizeof(struct sockaddr_in);
+/* A continuación la llamada a accept() */
+if ((fd2 = accept(fd, (struct sockaddr *) &client, &sin_size)) == -1) {
+printf("error en accept()\n");
+exit(-1);
+}
+printf("Se obtuvo una conexion desde %s\n", inet_ntoa(client.sin_addr));
+doprocessing(fd2);
+} /* end while */
+}
+
